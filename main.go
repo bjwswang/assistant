@@ -1,26 +1,67 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"flag"
+	"os"
 
-	"github.com/cli/go-gh/v2/pkg/api"
+	"github.com/bjwswang/assistant/pkg/assistant"
+	"github.com/bjwswang/assistant/pkg/server"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"k8s.io/klog"
+)
+
+var (
+	cfgFile = flag.String("config", "assistant.json", "config file path")
 )
 
 func main() {
-	fmt.Println("hi world, this is the gh-reviewer extension!")
-	client, err := api.DefaultRESTClient()
-	if err != nil {
-		fmt.Println(err)
-		return
+	flag.Parse()
+
+	if err := run(); err != nil {
+		klog.Error(err)
 	}
-	response := struct {Login string}{}
-	err = client.Get("user", &response)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("running as %s\n", response.Login)
 }
 
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
+// run starts the server and initializes the contract client
+func run() error {
+	klog.Infoln("Creating http server")
+
+	// read from config file and load into fiber.Config
+	cfgData, err := os.ReadFile(*cfgFile)
+	if err != nil {
+		return err
+	}
+	var config Config
+	err = json.Unmarshal(cfgData, &config)
+	if err != nil {
+		return err
+	}
+
+	// initialize assistant
+	aiAssistant := assistant.New(&config.Assistant)
+
+	// create a new fiber app
+	app := fiber.New(config.Fiber)
+	// add CORS middleware
+	app.Use(cors.New(cors.ConfigDefault))
+	// add logger middleware
+	app.Use(logger.New(logger.Config{
+		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	}))
+
+	// add routes
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome to AI Assistant 👋! \n")
+	})
+	app.Post("/chat", server.NewChatHandler(aiAssistant).Chat)
+
+	klog.Infoln("Starting assistant server")
+	if err := app.Listen(config.Addr); err != nil {
+		return err
+	}
+
+	return nil
+}

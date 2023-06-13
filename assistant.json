@@ -1,0 +1,13 @@
+{
+    "addr": ":9999",
+    "assistant": {
+        "api_key": "sk-xxx",
+        "model": "gpt-3.5-turbo"
+    },
+    "fiber": {
+        "app_name": "assitant",
+        "case_sensitive": true,
+        "strict_routing": true,
+        "immutable": true
+    }
+}
