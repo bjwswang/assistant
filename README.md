@@ -78,7 +78,13 @@ Welcome to AI Assistant 👋!
 
 ## CLI
 
-1. Generate unit tests
+1. Chat with assistant
+
+```shell
+./bin/acli --server http://localhost:9999 chat --question "What is AI assistant in 10 words?"
+```
+
+2. Generate unit tests
 
 ```shell
 ./bin/acli --server http://localhost:9999 ut --file {filepath_to_source_code_}"
