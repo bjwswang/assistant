@@ -1,11 +1,11 @@
-package server
+package handlers
 
 import (
 	"context"
-	"errors"
 
 	"github.com/bjwswang/assistant/pkg/assistant"
 	"github.com/gofiber/fiber/v2"
+	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )
 
@@ -21,9 +21,7 @@ func NewChatHandler(ai *assistant.Assistant) *ChatHandler {
 
 type ChatRequest struct {
 	// Question to ask assistant
-	Question string `json:"question"`
-	// Args to pass to assistant
-	Args []string `json:"args,omitempty"`
+	Question string `json:"question" binding:"required"`
 }
 
 type ChatResponse struct {
@@ -47,7 +45,7 @@ func (handler *ChatHandler) Chat(ctx *fiber.Ctx) error {
 		schema.HumanChatMessage{
 			Text: chatRequest.Question,
 		},
-	})
+	}, llms.WithTemperature(handler.ChatConfig().Temperature))
 	if err != nil {
 		return fiber.NewError(fiber.StatusInternalServerError, err.Error())
 	}
@@ -59,17 +57,5 @@ func (handler *ChatHandler) Chat(ctx *fiber.Ctx) error {
 
 // validateChatRequest validates the chat request
 func validateChatRequest(chatRequest *ChatRequest) error {
-	// validate question
-	if chatRequest.Question == "" {
-		return errors.New("question is required")
-	}
-	// validate args
-	if len(chatRequest.Args) > 0 {
-		for _, arg := range chatRequest.Args {
-			if arg == "" {
-				return errors.New("args must not be empty")
-			}
-		}
-	}
 	return nil
 }
