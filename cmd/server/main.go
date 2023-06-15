@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/bjwswang/assistant/pkg/assistant"
-	"github.com/bjwswang/assistant/pkg/server"
+	"github.com/bjwswang/assistant/pkg/handlers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 )
 
 var (
@@ -34,7 +34,10 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	var config Config
+	var config = Config{
+		Addr:      ":9999",
+		Assistant: assistant.DefaultConfig(),
+	}
 	err = json.Unmarshal(cfgData, &config)
 	if err != nil {
 		return err
@@ -56,7 +59,8 @@ func run() error {
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Welcome to AI Assistant 👋! \n")
 	})
-	app.Post("/chat", server.NewChatHandler(aiAssistant).Chat)
+	app.Post("/chat", handlers.NewChatHandler(aiAssistant).Chat)
+	app.Post("/ut", handlers.NewUnitTestHandler(aiAssistant).GenerateUnitTests)
 
 	klog.Infoln("Starting assistant server")
 	if err := app.Listen(config.Addr); err != nil {
