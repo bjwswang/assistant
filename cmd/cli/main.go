@@ -26,6 +26,7 @@ func NewCmd() *cobra.Command {
 
 	cmd.PersistentFlags().StringVar(&server, "server", defaultAssistantServerUrl, "asisstant server url")
 
+	cmd.AddCommand(Chat())
 	cmd.AddCommand(GenUnitTests())
 
 	return cmd
